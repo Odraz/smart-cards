@@ -64,17 +64,15 @@ export default function EditSetPage() {
       const updatePayload: Partial<Omit<CardSet, "id" | "userId" | "createdAt">> = {
         name: data.name,
         cards: cardsWithEnsuredIds,
-        aiGenerated: data.aiGenerated,
       };
 
       if (data.language !== undefined) {
         updatePayload.language = data.language;
       }
-      // If data.language is undefined, it won't be included in updatePayload,
-      // so it won't be sent to Firestore, avoiding the error.
-      // If you needed to explicitly remove the field from Firestore, you would use:
-      // else { updatePayload.language = deleteField() as unknown as string; }
-      // But for this case, not sending it is sufficient.
+      
+      if (data.aiGenerated !== undefined) {
+        updatePayload.aiGenerated = data.aiGenerated;
+      }
 
       await updateCardSet(initialData.id, user.uid, updatePayload);
       toast({ title: "Success", description: "Card set updated successfully!" });
@@ -106,4 +104,3 @@ export default function EditSetPage() {
     />
   );
 }
-
