@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -8,7 +9,7 @@ import { getCardSet, updateCardSet } from "@/lib/firebase/firestore";
 import type { CardSet, Card } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
-import { Timestamp }srom "firebase/firestore";
+import { Timestamp } from "firebase/firestore";
 
 interface SetFormData {
   name: string;
@@ -60,15 +61,22 @@ export default function EditSetPage() {
         id: card.id || crypto.randomUUID(), // Ensure ID for new cards added during edit
       }));
 
-      const updateData: Partial<Omit<CardSet, "id" | "userId" | "createdAt">> = {
+      const updatePayload: Partial<Omit<CardSet, "id" | "userId" | "createdAt">> = {
         name: data.name,
         cards: cardsWithEnsuredIds,
-        language: data.language,
         aiGenerated: data.aiGenerated,
-        // updatedAt will be handled by firestore.ts
       };
 
-      await updateCardSet(initialData.id, user.uid, updateData);
+      if (data.language !== undefined) {
+        updatePayload.language = data.language;
+      }
+      // If data.language is undefined, it won't be included in updatePayload,
+      // so it won't be sent to Firestore, avoiding the error.
+      // If you needed to explicitly remove the field from Firestore, you would use:
+      // else { updatePayload.language = deleteField() as unknown as string; }
+      // But for this case, not sending it is sufficient.
+
+      await updateCardSet(initialData.id, user.uid, updatePayload);
       toast({ title: "Success", description: "Card set updated successfully!" });
       router.push("/dashboard");
     } catch (error) {
@@ -98,3 +106,4 @@ export default function EditSetPage() {
     />
   );
 }
+

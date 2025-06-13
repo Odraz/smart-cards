@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -45,14 +46,17 @@ export default function NewAISetPage() {
         id: card.id || crypto.randomUUID(),
       }));
 
-      const newSetData: Omit<CardSet, "id" | "userId" | "createdAt" | "updatedAt"> = {
+      const setPayload: Omit<CardSet, "id" | "userId" | "createdAt" | "updatedAt"> = {
         name: data.name,
         cards: cardsWithIds,
-        language: data.language,
         aiGenerated: true,
       };
 
-      const newSetId = await addCardSet(user.uid, newSetData);
+      if (data.language !== undefined) {
+        setPayload.language = data.language;
+      }
+
+      const newSetId = await addCardSet(user.uid, setPayload);
       toast({ title: "Success", description: "AI-generated card set saved successfully!" });
       router.push(`/set/${newSetId}/edit`); // Or /dashboard
     } catch (error) {
@@ -102,3 +106,4 @@ export default function NewAISetPage() {
 
   return null; // Should not happen
 }
+
