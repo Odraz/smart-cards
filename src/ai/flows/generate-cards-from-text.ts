@@ -11,6 +11,7 @@
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
 import { z } from 'genkit';
+import { ai } from '@/ai/genkit'; // Import the global AI instance
 
 const GenerateCardsFromTextInputSchema = z.object({
   text: z
@@ -69,7 +70,7 @@ const safetySettings = [
 // Note: The global `ai.definePrompt` is not used here to allow dynamic API key usage.
 // The prompt text is constructed manually, and `generate` is called on a custom AI instance.
 
-const generateCardsFromTextFlow = genkit.defineFlow(
+const generateCardsFromTextFlow = ai.defineFlow( // Use the global 'ai' instance to define the flow
   {
     name: 'generateCardsFromTextFlow',
     inputSchema: GenerateCardsFromTextInputSchema,
@@ -77,6 +78,7 @@ const generateCardsFromTextFlow = genkit.defineFlow(
   },
   async (input: GenerateCardsFromTextInput) => {
     // Create a Genkit AI instance specifically configured with the user's API key
+    // The 'genkit' import is used here as a function to initialize a new instance
     const userSpecificAI = genkit({
       plugins: [googleAI({ apiKey: input.apiKey })],
       // The model can be specified here or in the generate call
