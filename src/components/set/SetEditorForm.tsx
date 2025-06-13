@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -72,16 +73,23 @@ export default function SetEditorForm({ initialData, onSubmit, isSubmitting, isA
 
   const processSubmit = async (data: SetFormValues) => {
     setLocalSubmitting(true);
-    // Ensure cards have unique IDs if new, or retain existing for edits
-    const processedData = {
-      ...data,
-      cards: data.cards.map(card => ({
-        ...card,
-        id: card.id || crypto.randomUUID(), // Generate UUID if new card
-      }))
-    };
-    await onSubmit(processedData);
-    setLocalSubmitting(false);
+    try {
+      // Ensure cards have unique IDs if new, or retain existing for edits
+      const processedData = {
+        ...data,
+        cards: data.cards.map(card => ({
+          ...card,
+          id: card.id || crypto.randomUUID(), // Generate UUID if new card
+        }))
+      };
+      await onSubmit(processedData); // This calls the handleSubmit from the parent page
+    } catch (error) {
+      // Errors are expected to be handled by the onSubmit prop (parent component's handleSubmit)
+      // which should display a toast. Logging here for additional diagnostics if needed.
+      console.error("Error propagated to SetEditorForm's processSubmit:", error);
+    } finally {
+      setLocalSubmitting(false); // Ensure localSubmitting is always reset
+    }
   };
 
   const handleAddCard = () => {
