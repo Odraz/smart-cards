@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -90,6 +91,7 @@ export default function ApiKeyModal({ isOpen, setIsOpen, userId }: ApiKeyModalPr
                 onChange={(e) => setApiKey(e.target.value)}
                 className="col-span-3"
                 placeholder="Enter your Gemini API key"
+                autoComplete="new-password"
               />
             )}
           </div>
