@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This file defines a Genkit flow for generating learning cards from text using the Gemini API.
@@ -7,8 +8,9 @@
  * - GenerateCardsFromTextOutput - The return type for the generateCardsFromText function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { genkit } from 'genkit';
+import { googleAI } from '@genkit-ai/googleai';
+import { z } from 'genkit';
 
 const GenerateCardsFromTextInputSchema = z.object({
   text: z
@@ -45,41 +47,61 @@ export async function generateCardsFromText(
   return generateCardsFromTextFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'generateCardsFromTextPrompt',
-  input: {schema: GenerateCardsFromTextInputSchema},
-  output: {schema: GenerateCardsFromTextOutputSchema},
-  prompt: `You are an expert in creating study materials. Your task is to carefully analyze the following text and create exactly {{numberOfCards}} of the most important learning cards from it. Important: All questions and answers must be formulated in the following language: {{language}}. Return the result as a single JSON object containing a key 'cards', whose value is an array of objects with keys 'question' and 'answer'. Do not include any other text outside the JSON itself. The text to analyze follows: \n\n{{{text}}}`,
-  config: {
-    safetySettings: [
-      {
-        category: 'HARM_CATEGORY_HATE_SPEECH',
-        threshold: 'BLOCK_ONLY_HIGH',
-      },
-      {
-        category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-        threshold: 'BLOCK_NONE',
-      },
-      {
-        category: 'HARM_CATEGORY_HARASSMENT',
-        threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-      },
-      {
-        category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-        threshold: 'BLOCK_LOW_AND_ABOVE',
-      },
-    ],
+const safetySettings = [
+  {
+    category: 'HARM_CATEGORY_HATE_SPEECH',
+    threshold: 'BLOCK_ONLY_HIGH',
   },
-});
+  {
+    category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+    threshold: 'BLOCK_NONE',
+  },
+  {
+    category: 'HARM_CATEGORY_HARASSMENT',
+    threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+  },
+  {
+    category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+    threshold: 'BLOCK_LOW_AND_ABOVE',
+  },
+];
 
-const generateCardsFromTextFlow = ai.defineFlow(
+// Note: The global `ai.definePrompt` is not used here to allow dynamic API key usage.
+// The prompt text is constructed manually, and `generate` is called on a custom AI instance.
+
+const generateCardsFromTextFlow = genkit.defineFlow(
   {
     name: 'generateCardsFromTextFlow',
     inputSchema: GenerateCardsFromTextInputSchema,
     outputSchema: GenerateCardsFromTextOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input: GenerateCardsFromTextInput) => {
+    // Create a Genkit AI instance specifically configured with the user's API key
+    const userSpecificAI = genkit({
+      plugins: [googleAI({ apiKey: input.apiKey })],
+      // The model can be specified here or in the generate call
+    });
+
+    const promptText = `You are an expert in creating study materials. Your task is to carefully analyze the following text and create exactly ${input.numberOfCards} of the most important learning cards from it. Important: All questions and answers must be formulated in the following language: ${input.language}. Return the result as a single JSON object containing a key 'cards', whose value is an array of objects with keys 'question' and 'answer'. Do not include any other text outside the JSON itself. The text to analyze follows: \n\n${input.text}`;
+
+    const { output } = await userSpecificAI.generate({
+      model: 'googleai/gemini-2.0-flash', // Ensure the model is specified
+      prompt: promptText,
+      output: {
+        schema: GenerateCardsFromTextOutputSchema,
+        format: 'json', // Request JSON output
+      },
+      config: {
+        safetySettings: safetySettings,
+      },
+    });
+
+    if (!output) {
+      // Handle cases where output might be null or undefined, though Genkit usually throws for errors.
+      // This can happen if the model's response doesn't match the schema despite requesting JSON.
+      throw new Error('AI model did not return the expected output format.');
+    }
+    
+    return output;
   }
 );
