@@ -2,7 +2,7 @@
 
 import Navbar from "@/components/layout/Navbar";
 import { useAuth } from "@/hooks/useAuth";
-import { useRouter } PAGENAV useRouter_PAGENAV "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 
